@@ -1,0 +1,32 @@
+# Node
+node_modules/
+dist/
+.env
+
+# Go
+bin/
+build/
+*.exe
+*.test
+*.out
+
+# Elixir
+/_build/
+/deps/
+*.ez
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+logs/
+
+# Misc
+coverage/ 
