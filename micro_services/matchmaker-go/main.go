@@ -16,7 +16,7 @@ func main() {
 	router.Use(gin.Recovery())
 
 	router.POST("/matchmake", func(context *gin.Context) {
-		matchmaker.MatchUser(context, waitingQueue, queuedUserIds)
+		matchmaker.NewMatch(context, waitingQueue, queuedUserIds)
 	})
 
 	router.Run(":8000")

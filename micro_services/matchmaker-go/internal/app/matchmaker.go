@@ -6,20 +6,19 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func MatchUser(context *gin.Context, userWaitingQueue domain.UserQueue, queuedUserIds domain.QueuedUserIDs) {
+func NewMatch(context *gin.Context, userWaitingQueue domain.UserQueue, queuedUserIds domain.QueuedUserIDs) {
 	user, err := getUserFromContext(context)
 	if err != nil {
-		context.JSON(404, gin.H{"status": "user not found"})
+		context.JSON(404, gin.H{"data": gin.H{"match": nil, "message": "user not found", "error": true}})
 		return
 	}
 
-	_, status, err := user.CreateMatch(userWaitingQueue, queuedUserIds)
+	match, status, err := user.CreateMatch(userWaitingQueue, &queuedUserIds)
 	if err != nil {
-		context.JSON(500, gin.H{"status": err.Error()})
+		context.JSON(500, gin.H{"data": gin.H{"match": nil, "message": err.Error(), "error": true}})
 	}
 
-	context.JSON(200, gin.H{"status": status})
-	return
+	context.JSON(200, gin.H{"data": gin.H{"match": match, "message": status, "error": false}})
 }
 
 func getUserFromContext(_ *gin.Context) (domain.User, error) {
