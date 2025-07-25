@@ -9,14 +9,13 @@ import (
 
 func main() {
 	var waitingQueue domain.UserQueue
-	var queuedUserIds domain.QueuedUserIDs
 
 	router := gin.Default()
 
 	router.Use(gin.Recovery())
 
 	router.POST("/matchmake", func(context *gin.Context) {
-		matchmaker.NewMatch(context, waitingQueue, queuedUserIds)
+		matchmaker.NewMatch(context, waitingQueue)
 	})
 
 	router.Run(":8000")

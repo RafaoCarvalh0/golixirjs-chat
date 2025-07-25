@@ -6,14 +6,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func NewMatch(context *gin.Context, userWaitingQueue domain.UserQueue, queuedUserIds domain.QueuedUserIDs) {
+func NewMatch(context *gin.Context, userWaitingQueue domain.UserQueue) {
 	user, err := getUserFromContext(context)
 	if err != nil {
 		context.JSON(404, gin.H{"data": gin.H{"match": nil, "message": "user not found", "error": true}})
 		return
 	}
 
-	match, status, err := user.CreateMatch(userWaitingQueue, &queuedUserIds)
+	match, status, err := user.CreateMatch(userWaitingQueue)
 	if err != nil {
 		context.JSON(500, gin.H{"data": gin.H{"match": nil, "message": err.Error(), "error": true}})
 	}
