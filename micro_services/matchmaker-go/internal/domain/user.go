@@ -18,6 +18,12 @@ type RandomMatcher interface {
 	randomMatch(queue UserQueue) (Match, error)
 }
 
+func NewUser(id string) User {
+	return User{
+		ID: id,
+	}
+}
+
 func (user *User) CreateMatch(queue UserQueue) (Match, string, error) {
 	return CreateMatch(user, queue, user)
 }

@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"matchmaker-go/internal/app"
 	"matchmaker-go/internal/domain"
 	"net/http"
@@ -21,20 +22,22 @@ func NewMatchmakerHandler(queue domain.UserQueue) *MatchmakerHandler {
 func (h *MatchmakerHandler) HandleMatchmaking(c *gin.Context) {
 	user, err := getUserFromContext(c)
 	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"data": gin.H{"match": nil, "message": "user not found", "error": true}})
-		return
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"data": gin.H{"match": nil, "message": err.Error(), "error": true}})
 	}
 
 	match, status, err := h.service.Match(user)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"data": gin.H{"match": nil, "message": err.Error(), "error": true}})
-		return
+		c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"data": gin.H{"match": nil, "message": err.Error(), "error": true}})
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": gin.H{"match": match, "message": status, "error": false}})
 }
 
-func getUserFromContext(_ *gin.Context) (domain.User, error) {
-	// TODO: fetch user from JWT
-	return domain.User{ID: "foo"}, nil
+func getUserFromContext(context *gin.Context) (domain.User, error) {
+	userID, exists := context.Get("userID")
+	if !exists {
+		return domain.NewUser(""), fmt.Errorf("user not found")
+	}
+
+	return domain.NewUser(userID.(string)), nil
 }
