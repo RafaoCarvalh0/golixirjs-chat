@@ -14,41 +14,41 @@ type UserQueue map[string]User
 
 type QueuedUserIDs []string
 
+type RandomMatcher interface {
+	randomMatch(queue UserQueue) (Match, error)
+}
+
 func (user *User) CreateMatch(queue UserQueue) (Match, string, error) {
-	var status string
+	return CreateMatch(user, queue, user)
+}
+
+func CreateMatch(user *User, queue UserQueue, matcher RandomMatcher) (Match, string, error) {
 	var match Match
+
+	status := "waiting for a pair..."
 
 	user.addUserToQueue(queue)
 
 	// TODO: add logic to consider user online status
 	if len(queue) <= 1 {
-		status = "waiting for a pair..."
 		return match, status, nil
 	}
 
-	match, err := user.createRandomMatch(queue)
+	match, err := matcher.randomMatch(queue)
 	if err != nil {
-		return match, "match created", err
+		return match, status, fmt.Errorf("unexpected error while trying to match users")
 	}
 
 	removeUsersFromQueue(queue, &match.User, &match.UserPair)
 
-	return match, status, fmt.Errorf("unexpected error while trying to match users")
-}
-
-func (user *User) alreadyQueued(queue UserQueue) bool {
-	if _, found := queue[user.ID]; found {
-		return true
-	}
-
-	return false
+	return match, "match created", err
 }
 
 func (user *User) addUserToQueue(queue UserQueue) {
 	queue[user.ID] = *user
 }
 
-func (user *User) createRandomMatch(queue UserQueue) (Match, error) {
+func (user *User) randomMatch(queue UserQueue) (Match, error) {
 	var match Match
 
 	randomUser, err := user.getRandomUserFromQueue(queue)
@@ -75,26 +75,19 @@ func (user *User) getRandomUserFromQueue(queue UserQueue) (User, error) {
 
 	var queuedUserIds []string
 	for key := range queue {
-		queuedUserIds = append(queuedUserIds, key)
+		if key != user.ID {
+			queuedUserIds = append(queuedUserIds, key)
+		}
 	}
 
-	randomUser = user.randomUserPair(queue, queuedUsersCount, queuedUserIds)
+	randomUserId := queuedUserIds[randomIndexFromList(queuedUserIds)]
 
-	return randomUser, nil
+	return queue[randomUserId], nil
 }
 
-func (user *User) randomUserPair(queue UserQueue, queuedUsersCount int, queuedUserIds []string) User {
-	var randomUser User
+func randomIndexFromList[T any](list []T) int {
+	listLength := len(list)
 
-	randomUserId := queuedUserIds[randomIndex(queuedUsersCount)]
-	if randomUser = queue[randomUserId]; randomUser.ID == user.ID {
-		return user.randomUserPair(queue, queuedUsersCount, queuedUserIds)
-	}
-
-	return randomUser
-}
-
-func randomIndex(listLength int) int {
 	randomIndex, _ := rand.Int(rand.Reader, big.NewInt(int64(listLength)))
 	return int(randomIndex.Int64())
 }

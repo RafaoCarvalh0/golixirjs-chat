@@ -1,39 +1,56 @@
 package domain
 
 import (
+	"fmt"
 	"testing"
 )
 
 const checkMark = "\u2713"
 const ballotX = "\u2717"
 
-func Test_alreadyQueued(t *testing.T) {
-	existingUser := User{ID: "bar"}
+type randomMatcherMock struct{}
+
+func (rm *randomMatcherMock) randomMatch(queue UserQueue) (Match, error) {
+	return Match{User: User{ID: ""}, UserPair: User{ID: ""}}, fmt.Errorf("error")
+}
+func Test_CreateMatch(t *testing.T) {
+	userCaller := User{ID: "bar"}
 	queue := map[string]User{}
 
-	queue[existingUser.ID] = existingUser
-
-	ids := []string{"foo", "baz"}
-	for _, id := range ids {
+	for _, id := range []string{"foo", "baz"} {
 		queue[id] = User{ID: id}
 	}
 
-	t.Log("Given a user and a user queue.")
+	t.Log("Given a user, a queue and a RandomMatcher.")
 	{
-		testDescription := "\t\tReturns true when the user caller is present in the queue."
-		userInQueue := existingUser.alreadyQueued(queue)
-		if !userInQueue {
-			t.Fatal(testDescription,
-				ballotX, userInQueue)
+		testDescription := "\t\tReturns a new match with user caller, a user pair that is not the caller, 'match created' status and err nil when there are users in the queue."
+		newMatch, status, err := CreateMatch(&userCaller, queue, &userCaller)
+		if newMatch.User.ID != userCaller.ID ||
+			(newMatch.UserPair.ID != "foo" && newMatch.UserPair.ID != "baz") ||
+			status != "match created" ||
+			err != nil {
+			t.Fatal(testDescription, newMatch, status, err, ballotX)
 		}
 		t.Log(testDescription, checkMark)
 
-		testDescription = "\t\tReturns false when the user caller is not in the queue."
-		emptyQueue := map[string]User{}
-		userInQueue = existingUser.alreadyQueued(emptyQueue)
-		if userInQueue {
+		testDescription = "\t\tReturns 'waiting for a pair...' status whe there's only the user caller in queue."
+		queue = map[string]User{userCaller.ID: {ID: userCaller.ID}}
+		newMatch, status, err = CreateMatch(&userCaller, queue, &userCaller)
+		if status != "waiting for a pair..." || err != nil {
 			t.Fatal(testDescription,
-				ballotX, userInQueue)
+				newMatch, status, err, ballotX)
+		}
+		t.Log(testDescription, checkMark)
+
+		testDescription = "\t\tReturns 'waiting for a pair...' status with unexpected error message when creating a random match fails"
+		queue = map[string]User{userCaller.ID: {ID: userCaller.ID}, "foo": {ID: "FOO"}}
+		newMatch, status, err = CreateMatch(&userCaller, queue, &randomMatcherMock{})
+		if newMatch.User.ID != "" ||
+			newMatch.UserPair.ID != "" ||
+			status != "waiting for a pair..." ||
+			err.Error() != "unexpected error while trying to match users" {
+			t.Fatal(testDescription,
+				newMatch, status, err, ballotX)
 		}
 		t.Log(testDescription, checkMark)
 	}
