@@ -9,6 +9,7 @@ import (
 )
 
 func NewRouter() *gin.Engine {
+	// TODO: add a goroutine to safely share this queue
 	waitingQueue := make(domain.UserQueue)
 
 	handler := http.NewMatchmakerHandler(waitingQueue)
