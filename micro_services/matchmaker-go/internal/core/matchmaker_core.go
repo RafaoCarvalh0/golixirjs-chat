@@ -13,5 +13,5 @@ func NewMatchmaker(queue domain.UserQueue) *Matchmaker {
 }
 
 func (m *Matchmaker) Match(user domain.User) (domain.Match, string, error) {
-	return user.CreateMatch(m.Queue)
+	return user.CreateMatch(&m.Queue)
 }

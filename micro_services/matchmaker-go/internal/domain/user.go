@@ -4,39 +4,39 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math/big"
+	"sync"
 )
 
 type User struct {
 	ID string
 }
 
-type UserQueue map[string]User
+type UserQueue struct {
+	mu      *sync.Mutex
+	userMap map[string]User
+}
 
 type QueuedUserIDs []string
 
 type RandomMatcher interface {
-	randomMatch(queue UserQueue) (Match, error)
+	randomMatch(queue *UserQueue) (Match, error)
 }
 
-func NewUser(id string) User {
-	return User{
-		ID: id,
-	}
-}
+func (user *User) CreateMatch(queue *UserQueue) (Match, string, error) {
+	queue.mu.Lock()
+	defer queue.mu.Unlock()
 
-func (user *User) CreateMatch(queue UserQueue) (Match, string, error) {
 	return CreateMatch(user, queue, user)
 }
 
-func CreateMatch(user *User, queue UserQueue, matcher RandomMatcher) (Match, string, error) {
+func CreateMatch(user *User, queue *UserQueue, matcher RandomMatcher) (Match, string, error) {
 	var match Match
 
 	status := "waiting for a pair..."
 
 	user.addUserToQueue(queue)
 
-	// TODO: add logic to consider user online status
-	if len(queue) <= 1 {
+	if len(queue.userMap) <= 1 {
 		return match, status, nil
 	}
 
@@ -50,11 +50,11 @@ func CreateMatch(user *User, queue UserQueue, matcher RandomMatcher) (Match, str
 	return match, "match created", err
 }
 
-func (user *User) addUserToQueue(queue UserQueue) {
-	queue[user.ID] = *user
+func (user *User) addUserToQueue(queue *UserQueue) {
+	queue.userMap[user.ID] = *user
 }
 
-func (user *User) randomMatch(queue UserQueue) (Match, error) {
+func (user *User) randomMatch(queue *UserQueue) (Match, error) {
 	var match Match
 
 	randomUser, err := user.getRandomUserFromQueue(queue)
@@ -65,22 +65,22 @@ func (user *User) randomMatch(queue UserQueue) (Match, error) {
 	return Match{User: *user, UserPair: randomUser}, nil
 }
 
-func removeUsersFromQueue(queue UserQueue, users ...*User) {
+func removeUsersFromQueue(queue *UserQueue, users ...*User) {
 	for _, user := range users {
-		delete(queue, user.ID)
+		delete(queue.userMap, user.ID)
 	}
 }
 
-func (user *User) getRandomUserFromQueue(queue UserQueue) (User, error) {
+func (user *User) getRandomUserFromQueue(queue *UserQueue) (User, error) {
 	var randomUser User
-	queuedUsersCount := len(queue)
+	queuedUsersCount := len(queue.userMap)
 
 	if queuedUsersCount <= 1 {
 		return randomUser, fmt.Errorf("no pair available")
 	}
 
 	var queuedUserIds []string
-	for key := range queue {
+	for key := range queue.userMap {
 		if key != user.ID {
 			queuedUserIds = append(queuedUserIds, key)
 		}
@@ -88,7 +88,7 @@ func (user *User) getRandomUserFromQueue(queue UserQueue) (User, error) {
 
 	randomUserId := queuedUserIds[randomIndexFromList(queuedUserIds)]
 
-	return queue[randomUserId], nil
+	return queue.userMap[randomUserId], nil
 }
 
 func randomIndexFromList[T any](list []T) int {
