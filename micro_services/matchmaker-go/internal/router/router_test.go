@@ -39,6 +39,48 @@ func TestRouteExists(t *testing.T) {
 	}
 }
 
+func TestCreateMatch(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := router.NewRouter()
+
+	token1 := createMockToken("usr0001")
+	req1 := httptest.NewRequest(http.MethodPost, "/create-match", nil)
+	req1.Header.Set("Authorization", "Bearer "+token1)
+
+	resp1 := httptest.NewRecorder()
+	r.ServeHTTP(resp1, req1)
+
+	expectedResponse := `{"data":{"error":false,"match":{"User":{"ID":""},"UserPair":{"ID":""}},"message":"waiting for a pair..."}}`
+	if resp1.Body.String() != expectedResponse {
+		t.Fatal("Expected body:", expectedResponse, "Got:", resp1.Body.String())
+	}
+
+	token2 := createMockToken("usr0002")
+	req2 := httptest.NewRequest(http.MethodPost, "/create-match", nil)
+	req2.Header.Set("Authorization", "Bearer "+token2)
+
+	resp2 := httptest.NewRecorder()
+	r.ServeHTTP(resp2, req2)
+
+	expectedResponse = `{"data":{"error":false,"match":{"User":{"ID":"usr0002"},"UserPair":{"ID":"usr0001"}},"message":"match created"}}`
+	if resp2.Body.String() != expectedResponse {
+		t.Fatal("Expected body:", expectedResponse, "Got:", resp2.Body.String())
+	}
+
+	token3 := createMockToken("usr0003")
+	req3 := httptest.NewRequest(http.MethodPost, "/create-match", nil)
+	req3.Header.Set("Authorization", "Bearer "+token3)
+
+	resp3 := httptest.NewRecorder()
+	r.ServeHTTP(resp3, req3)
+
+	expectedResponse = `{"data":{"error":false,"match":{"User":{"ID":""},"UserPair":{"ID":""}},"message":"waiting for a pair..."}}`
+	if resp3.Body.String() != expectedResponse {
+		t.Fatal("Expected body:", expectedResponse, "Got:", resp3.Body.String())
+	}
+
+}
+
 func TestWithoutAuthorizationHeader(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	r := router.NewRouter()
