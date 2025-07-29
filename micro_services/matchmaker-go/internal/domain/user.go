@@ -23,13 +23,13 @@ type RandomMatcher interface {
 }
 
 func (user *User) CreateMatch(queue *UserQueue) (Match, string, error) {
-	queue.mu.Lock()
-	defer queue.mu.Unlock()
-
 	return CreateMatch(user, queue, user)
 }
 
 func CreateMatch(user *User, queue *UserQueue, matcher RandomMatcher) (Match, string, error) {
+	queue.mu.Lock()
+	defer queue.mu.Unlock()
+
 	var match Match
 
 	status := "waiting for a pair..."

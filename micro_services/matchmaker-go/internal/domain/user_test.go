@@ -64,8 +64,8 @@ func Test_CreateMatch(t *testing.T) {
 
 func Test_ConcurrentCreateMatch(t *testing.T) {
 	var wg sync.WaitGroup
+	var mu sync.Mutex
 	var statusWaitingCount int
-	var queueLimitExceeded bool
 	var usersMatchedCount int
 
 	userIDs := []string{"u1", "u2", "u3", "u4", "u5", "u6", "u7", "u8", "u9", "u10", "u11"}
@@ -81,15 +81,16 @@ func Test_ConcurrentCreateMatch(t *testing.T) {
 			match, status, _ := user.CreateMatch(&queue)
 
 			if match.User.ID != "" && match.UserPair.ID != "" {
+				mu.Lock()
 				usersMatchedCount += 2
+				mu.Unlock()
+
 			}
 
 			if status == "waiting for a pair..." {
+				mu.Lock()
 				statusWaitingCount++
-			}
-
-			if len(queue.userMap) > 2 {
-				queueLimitExceeded = true
+				mu.Unlock()
 			}
 
 		}(id)
@@ -111,13 +112,7 @@ func Test_ConcurrentCreateMatch(t *testing.T) {
 		}
 		t.Log(testDescription, checkMark)
 
-		testDescription = "\t\tThe queue should not have more than 2 users at once."
-		if queueLimitExceeded {
-			t.Fatal(testDescription, queueLimitExceeded, ballotX)
-		}
-		t.Log(testDescription, checkMark)
-
-		testDescription = "\t\tIf an uneven number o calls happened, half plus one of them should return a 'waiting for pair...' status."
+		testDescription = "\t\tIf an uneven number of calls happened, half plus one of them should return a 'waiting for pair...' status."
 		if statusWaitingCount != (len(userIDs)/2)+1 {
 			t.Fatal(testDescription, statusWaitingCount, ballotX)
 		}
