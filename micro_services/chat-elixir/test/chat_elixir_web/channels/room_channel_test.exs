@@ -29,7 +29,7 @@ defmodule ChatElixirWeb.RoomChannelTest do
   end
 
   describe "join/3" do
-    test "returns success tuple with socket when joining lobby if the user is authorized", %{
+    test "returns subcribed socket joining lobby with a valid topic", %{
       unsubscribed_socket: unsubscribed_socket
     } do
       {:ok, %{}, unsubscribed_socket} = subscribe_and_join(unsubscribed_socket, "room:123")
@@ -38,11 +38,12 @@ defmodule ChatElixirWeb.RoomChannelTest do
       assert unsubscribed_socket.topic == "room:123"
     end
 
-    test "returns error tuple with reason for nonexistent room", %{
+    test "reises for invalid topic", %{
       unsubscribed_socket: unsubscribed_socket
     } do
-      {:error, %{reason: "unauthorized"}} =
-        subscribe_and_join(unsubscribed_socket, "room:nonexistent123")
+      assert_raise(RuntimeError, fn ->
+        subscribe_and_join(unsubscribed_socket, "foobarbaz:nonexistent123")
+      end)
     end
   end
 
