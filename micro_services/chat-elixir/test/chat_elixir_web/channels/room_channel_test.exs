@@ -5,7 +5,7 @@ defmodule ChatElixirWeb.RoomChannelTest do
 
   @endpoint ChatElixirWeb.Endpoint
 
-  @room_id "room:lobby"
+  @mock_room_id "room:lobby"
 
   setup do
     unsubscribed_socket =
@@ -14,12 +14,12 @@ defmodule ChatElixirWeb.RoomChannelTest do
     {_, _, subscribed_socket1} =
       ChatElixirWeb.UserSocket
       |> socket("user:joined_user1", %{some_assigns: 1})
-      |> subscribe_and_join(@room_id)
+      |> subscribe_and_join(@mock_room_id)
 
     {_, _, subscribed_socket2} =
       ChatElixirWeb.UserSocket
       |> socket("user:joined_user2", %{some_assigns: 1})
-      |> subscribe_and_join(@room_id)
+      |> subscribe_and_join(@mock_room_id)
 
     %{
       unsubscribed_socket: unsubscribed_socket,
@@ -32,10 +32,10 @@ defmodule ChatElixirWeb.RoomChannelTest do
     test "returns success tuple with socket when joining lobby if the user is authorized", %{
       unsubscribed_socket: unsubscribed_socket
     } do
-      {:ok, %{}, unsubscribed_socket} = subscribe_and_join(unsubscribed_socket, @room_id)
+      {:ok, %{}, unsubscribed_socket} = subscribe_and_join(unsubscribed_socket, "room:123")
 
       assert unsubscribed_socket.joined == true
-      assert unsubscribed_socket.topic == @room_id
+      assert unsubscribed_socket.topic == "room:123"
     end
 
     test "returns error tuple with reason for nonexistent room", %{
