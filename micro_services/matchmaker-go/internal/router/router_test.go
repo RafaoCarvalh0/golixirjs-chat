@@ -11,6 +11,7 @@ import (
 	"github.com/golang-jwt/jwt"
 )
 
+// TODO: Add a proper secret key
 var secretKey = []byte("secret-key")
 
 func createMockToken(sub string) string {
