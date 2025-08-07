@@ -1,23 +1,43 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
+import { USER_REPOSITORY } from './user.repository.token';
+import { User } from './user.entity';
 
+import type { UserRepository } from './user.repository';
 
 @Injectable()
 export class UserService {
-    joinUserToChat(username: string): string {
-        // TODO: check if username is available (not present in cache) 
-        // TODO: add user to cache, maybe an map with username and room_id fields
+    constructor(
+        @Inject(USER_REPOSITORY)
+        private userRepository: UserRepository
+    ) { }
+
+    async joinUserToChat(username: string): Promise<string> {
+        const existingUser = await this.userRepository.getUserByUsername(username);
+        if (existingUser) {
+            throw `username already taken`;
+        }
+
+        const newUser = User.new(username)
+        this.userRepository.createUser(newUser)
+
+        // TODO: make user join a chat using the chat ms
         return `user ${username} joined chat`;
     }
 
-    sendMessageToChat(username: string): string {
-        // TODO: check for user in cache
-        // TODO: send message to room_id trough chat service
+    async sendMessageToChat(username: string): Promise<string> {
+        // TODO: get user from cache and send message to roomId trough a chat micro service
         return `user ${username} message sent`;
     }
 
-    leaveChat(username: string): string {
+    async leaveChat(username: string): Promise<string> {
         // TODO: close chat socket
-        // TODO: remove username from cache to make it available
+        const existingUser = await this.userRepository.getUserByUsername(username);
+        if (existingUser) {
+            this.userRepository.deleteUser(existingUser.id)
+        }
         return `user ${username} has left the chat`;
     }
+
 }
+
+
